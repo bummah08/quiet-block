@@ -15,7 +15,7 @@ gh auth login --hostname github.com --git-protocol https --web --scopes repo
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-Updates.ps1 -Repository bummah08/quiet-block
 ```
 
-Then load `%LOCALAPPDATA%\QuietBlock\extension` in `opera://extensions` using **Developer mode → Load unpacked**. Disable your older copy. Moving to this managed folder creates a different extension ID, so copy any custom domains/exceptions from the old copy first; subsequent updates preserve preferences.
+Then load `%LOCALAPPDATA%\QuietBlock\extension` in `opera://extensions` using **Developer mode → Load unpacked**. Keep Developer mode enabled; Opera can disable a reloaded development extension when it is off. Disable your older copy. Moving to this managed folder creates a different extension ID, so copy any custom domains/exceptions from the old copy first; subsequent updates preserve preferences.
 
 The installer registers **Quiet Block Updates** in Windows Task Scheduler. It checks the latest stable GitHub release hourly while your Windows user is signed in. It verifies the package SHA-256 checksum and expected archive contents, stages the files, preserves the previous version, and swaps the extension directory. Same-version replacements and downgrades are refused. Opera checks the local installed-version marker every minute and reloads the extension when a newer version is ready. Open website tabs need a refresh to receive updated page scripts; the updater does not refresh them automatically.
 
@@ -91,6 +91,7 @@ Tested in Opera GX 136.0.6008.76 using a separate temporary profile and local fi
 - A local YouTube-shaped fixture triggered the Skip button, muted an ad, hid an ad tile, and restored the prior mute state afterward.
 - Disabling the YouTube helper restored the hidden tile.
 - Popup and settings pages loaded and were visually inspected.
+- A managed installation upgraded from 1.0.0 to 1.1.0 in Opera GX through the real local-file check and runtime reload, retaining its saved custom domain list. The test triggered the registered alarm early rather than waiting for the normal hourly download cycle.
 
 The fixture tests verify extension behavior, not live ad coverage on YouTube or other websites. No changes were made to the user's regular Opera profile.
 
