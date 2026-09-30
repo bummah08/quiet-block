@@ -1,0 +1,30 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test
+      - name: Verify updater
+        shell: pwsh
+        run: ./tests/updater.ps1
+      - name: Build release
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./scripts/Build-Release.ps1 -Tag $env:RELEASE_TAG
+      - name: Publish private release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create $env:RELEASE_TAG dist/quiet-block.zip dist/SHA256SUMS --verify-tag --title "Quiet Block $env:RELEASE_TAG" --generate-notes

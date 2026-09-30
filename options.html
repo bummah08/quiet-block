@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Quiet Block · Settings</title><link rel="stylesheet" href="styles.css"></head>
+<body class="options"><main>
+  <header><span class="logo" aria-hidden="true">Q</span><div><h1>Make the web quieter.</h1><p>Your domains. Your exceptions. All stored locally.</p></div></header>
+  <form id="form">
+    <section class="card switches"><label><input id="enabled" type="checkbox"> Enable blocking</label><label><input id="builtIn" type="checkbox"> Use the bundled ad-network list</label><label><input id="popups" type="checkbox"> Block automatic pop-ups without a recent user interaction</label><label><input id="youtube" type="checkbox"> YouTube: auto-click available Skip buttons, mute ads, hide ad tiles <span class="pill">Experimental</span></label><p class="hint">The starter list covers common ad networks. Your custom domains are added to it. Redirects and new tabs targeting blocked domains are also blocked.</p><details><summary id="builtinSummary">View bundled domains</summary><pre id="builtinList"></pre></details></section>
+    <div class="columns">
+      <section class="card"><label class="field" for="blocked">Custom blocked domains</label><p class="hint">One per line. Blocks resources and navigation to each domain and its subdomains.</p><textarea id="blocked" spellcheck="false" placeholder="ads.example.com&#10;another-ad-network.example"></textarea></section>
+      <section class="card"><label class="field" for="allowed">Website exceptions</label><p class="hint">Blocking pauses on these websites and their subdomains, including embedded content. Exceptions take priority.</p><textarea id="allowed" spellcheck="false" placeholder="news.example.com&#10;site-you-support.example"></textarea></section>
+    </div>
+    <div class="save-row"><button id="save" type="submit" disabled>Save changes</button><span id="status" role="status" aria-live="polite">Loading…</span></div>
+  </form>
+  <section class="card update-card"><h2>Extension updates</h2><p id="updates" class="hint">Checking local update setup…</p></section>
+  <section class="notes"><p>Paste domains or full website URLs; URLs are reduced to their domain. Lines starting with # are comments. Up to 1,000 domains per list. EasyList/uBlock filter syntax is not supported.</p><p>Reload affected pages after changing rules. YouTube support is experimental: unskippable ads may still play muted; embedded videos and other video services are not covered by the YouTube handler. Pop-ups triggered by a recent click can still open. Redirects to unlisted domains are not blocked. Other blockers, including Opera's built-in blocker, operate independently.</p></section>
+</main><script type="module" src="options.js"></script></body></html>

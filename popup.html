@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Quiet Block</title><link rel="stylesheet" href="styles.css"></head>
+<body class="popup">
+  <header><span class="logo" aria-hidden="true">Q</span><div><h1>Quiet Block</h1><p>Less noise. Your rules.</p></div></header>
+  <section class="hero"><span class="eyebrow">NETWORK FILTERING</span><h2 id="mode">Connecting…</h2><p id="summary">Loading your settings.</p><button id="power" disabled>Loading…</button></section>
+  <section class="site"><span class="eyebrow">CURRENT WEBSITE</span><div id="host">—</div><button id="site" class="secondary" disabled>Pause on this site</button></section>
+  <p id="message" class="message" role="status" aria-live="polite"></p>
+  <button id="reload" class="secondary" hidden>Reload this page</button>
+  <button id="settings" class="text-button">Manage domains & exceptions →</button>
+  <footer>No account. No telemetry. Rules stay in your browser.</footer>
+  <script type="module" src="popup.js"></script>
+</body></html>

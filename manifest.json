@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Quiet Block",
+  "version": "1.1.0",
+  "description": "Custom ad-domain filtering, automatic pop-up protection, and optional YouTube ad skipping/muting.",
+  "minimum_chrome_version": "111",
+  "permissions": ["declarativeNetRequest", "storage", "activeTab", "alarms"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_title": "Quiet Block", "default_popup": "popup.html" },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "content_scripts": [
+    { "matches": ["http://*/*", "https://*/*"], "js": ["popup-guard.js"], "run_at": "document_start", "world": "MAIN", "all_frames": true },
+    { "matches": ["http://*/*", "https://*/*"], "js": ["page-controls.js"], "run_at": "document_start", "all_frames": true }
+  ]
+}

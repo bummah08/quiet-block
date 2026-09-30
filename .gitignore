@@ -1,0 +1,9 @@
+dist/
+work/
+node_modules/
+*.pem
+*.key
+*.crx
+*.log
+.env*
+quiet-block-updater.json

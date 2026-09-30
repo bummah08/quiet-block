@@ -1,0 +1,10 @@
+{
+  "name": "quiet-block",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/verify.mjs && node tests/update-bridge.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
