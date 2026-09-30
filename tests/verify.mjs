@@ -38,12 +38,21 @@ test('navigation protection and site exceptions have explicit priorities', () =>
 test('empty custom-only list produces no rules', () => assert.deepEqual(buildRules({ ...DEFAULTS, builtIn: false }), []));
 
 // Exercise worker state transitions, serialized writes, and a failed rule update.
-let onMessage, saved = {}, rules = [], failNext = false;
+let onMessage, saved = {}, rules = [], failNext = false, scripts = [], failScript = false;
 globalThis.chrome = {
   runtime: { id: 'test', getURL: path => path, getManifest: () => ({ version: '1.1.0' }), onMessage: { addListener: listener => { onMessage = listener; } } },
   alarms: { get: async () => ({}), create: async () => {}, onAlarm: { addListener: () => {} } },
   storage: { local: { get: async () => structuredClone(saved), set: async value => { saved = { ...saved, ...structuredClone(value) }; } } },
   action: { setBadgeText: async () => {}, setBadgeBackgroundColor: async () => {}, setTitle: async () => {} },
+  scripting: {
+    getRegisteredContentScripts: async () => structuredClone(scripts),
+    registerContentScripts: async input => { scripts = structuredClone(input); },
+    updateContentScripts: async input => {
+      if (failScript) { failScript = false; throw new Error('Script registration rejected'); }
+      scripts = structuredClone(input);
+    },
+    unregisterContentScripts: async () => { scripts = []; }
+  },
   declarativeNetRequest: {
     getDynamicRules: async () => structuredClone(rules),
     updateDynamicRules: async update => {
@@ -70,4 +79,24 @@ test('simultaneous toggles are serialized without losing a write', () => assert.
 await send({ type: 'save', settings: { ...DEFAULTS, allowed: ['example.com'] } });
 const parent = await send({ type: 'site', host: 'news.example.com' });
 test('child toggle does not silently remove a parent-domain exception', () => { assert.equal(parent.ok, false); assert.deepEqual(saved.settings.allowed, ['example.com']); });
+test('YouTube filtering is persistent and runs before site code', () => {
+  assert.equal(scripts[0].runAt, 'document_start'); assert.equal(scripts[0].world, 'MAIN');
+  assert.equal(scripts[0].persistAcrossSessions, true); assert.equal(scripts[0].allFrames, false);
+});
+await send({ type: 'save', settings: { ...DEFAULTS, allowed: ['www.youtube.com'] } });
+test('YouTube subdomain exceptions exclude script injection', () => assert.deepEqual(scripts[0].excludeMatches, ['*://*.www.youtube.com/*']));
+await send({ type: 'save', settings: { ...DEFAULTS, allowed: ['youtube.com'] } });
+test('YouTube parent exception removes filter registration', () => assert.equal(scripts.length, 0));
+await send({ type: 'save', settings: { ...DEFAULTS, youtube: false } });
+test('YouTube switch off removes filter registration', () => assert.equal(scripts.length, 0));
+await send({ type: 'save', settings: DEFAULTS });
+failScript = true;
+const scriptFailure = await send({ type: 'save', settings: { ...DEFAULTS, blocked: ['rollback.example'] } });
+test('script registration failure rolls back both settings and network rules', () => {
+  assert.equal(scriptFailure.ok, false); assert.deepEqual(saved.settings.blocked, []);
+  assert.ok(!rules[0].condition.requestDomains.includes('rollback.example'));
+  assert.equal(scripts.length, 1);
+});
+await send({ type: 'toggle' });
+test('global off unregisters the player filter', () => assert.equal(scripts.length, 0));
 console.log(`${passed} checks passed.`);

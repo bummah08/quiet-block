@@ -15,6 +15,23 @@ async function installRules(settings) {
   });
 }
 
+async function installYouTubeFilter(settings) {
+  const id = 'quiet-block-youtube';
+  const [existing] = await chrome.scripting.getRegisteredContentScripts({ ids: [id] });
+  const enabled = settings.enabled && settings.youtube && !settings.allowed.includes('youtube.com');
+  if (!enabled) {
+    if (existing) await chrome.scripting.unregisterContentScripts({ ids: [id] });
+    return;
+  }
+  const script = {
+    id, js: ['youtube-block.js'], matches: ['*://*.youtube.com/*'],
+    excludeMatches: settings.allowed.filter(domain => domain.endsWith('.youtube.com')).map(domain => `*://*.${domain}/*`),
+    runAt: 'document_start', world: 'MAIN', allFrames: false, persistAcrossSessions: true
+  };
+  if (existing) await chrome.scripting.updateContentScripts([script]);
+  else await chrome.scripting.registerContentScripts([script]);
+}
+
 async function badge(settings) {
   // Badge is global; a website exception is shown explicitly in the popup.
   await chrome.action.setBadgeText({ text: settings.enabled ? 'ON' : 'OFF' });
@@ -27,9 +44,11 @@ async function commit(input) {
   const previous = await readSettings();
   // Save desired state first: if the worker is interrupted, startup reconciles it.
   await chrome.storage.local.set({ settings: next });
-  try { await installRules(next); }
+  try { await installRules(next); await installYouTubeFilter(next); }
   catch (error) {
     await chrome.storage.local.set({ settings: previous });
+    await installRules(previous);
+    await installYouTubeFilter(previous);
     throw new Error(`Could not apply the rules: ${error.message}`);
   }
   await badge(next);
@@ -48,6 +67,7 @@ function serial(operation) {
 const initialized = serial(async () => {
   const settings = await readSettings();
   await installRules(settings);
+  await installYouTubeFilter(settings);
   await badge(settings);
 });
 initialized.catch(error => console.error('Quiet Block initialization failed:', error));

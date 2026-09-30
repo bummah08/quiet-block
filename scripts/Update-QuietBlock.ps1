@@ -56,19 +56,22 @@ try {
   $unpacked = Join-Path $stage 'extension'
   New-Item -ItemType Directory -Path $unpacked | Out-Null
   $required = @('manifest.json','background.js','rules.mjs','update-bridge.mjs','local-update.json','options.html','options.js','page-controls.js','popup-guard.js','popup.html','popup.js','styles.css')
+  $optional = @('youtube-block.js') # Allows an upgraded helper to read older 1.1 packages.
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $zip = [IO.Compression.ZipFile]::OpenRead($archive)
   try {
-    if ($zip.Entries.Count -ne $required.Count) { throw 'Unexpected release archive contents.' }
+    if ($zip.Entries.Count -lt $required.Count -or $zip.Entries.Count -gt ($required.Count + $optional.Count)) { throw 'Unexpected release archive contents.' }
     $seen = @{}
     foreach ($entry in $zip.Entries) {
-      if ($entry.FullName -cnotin $required -or $seen.ContainsKey($entry.FullName) -or $entry.Length -gt 5MB) { throw 'Invalid or oversized release archive entry.' }
+      if ($entry.FullName -cnotin ($required + $optional) -or $seen.ContainsKey($entry.FullName) -or $entry.Length -gt 5MB) { throw 'Invalid or oversized release archive entry.' }
       $seen[$entry.FullName] = $true
       [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, (Join-Path $unpacked $entry.FullName))
     }
+    foreach ($file in $required) { if (!$seen.ContainsKey($file)) { throw 'Missing required release file.' } }
   } finally { $zip.Dispose() }
   $manifest = Get-Content -LiteralPath (Join-Path $unpacked 'manifest.json') -Raw | ConvertFrom-Json
   if ($manifest.name -cne 'Quiet Block' -or $manifest.manifest_version -ne 3 -or $manifest.version -notmatch '^\d+\.\d+\.\d+(?:\.\d+)?$') { throw 'Invalid Quiet Block release manifest.' }
+  if ([version]$manifest.version -ge [version]'1.2.0' -and !(Test-Path -LiteralPath (Join-Path $unpacked 'youtube-block.js'))) { throw 'Missing YouTube filter.' }
   if ($tag -and $tag -cne "v$($manifest.version)") { throw 'Release tag and package version do not match.' }
   $currentManifest = Join-Path $extension 'manifest.json'
   if (Test-Path -LiteralPath $currentManifest) {

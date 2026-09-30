@@ -37,7 +37,7 @@ To stop automatic downloads while keeping the extension, run `scripts/Disable-Up
 - A global on/off switch.
 - Blocking of navigation/redirects to listed ad domains.
 - A guard against automatic `window.open()` pop-ups without recent user activation.
-- Optional, experimental YouTube assistance: click an available Skip button, mute detected video ads, restore the earlier mute state when the ad ends, and hide recognized promotional tiles.
+- Optional YouTube video-ad filtering: remove known ad instructions before the player consumes its initial data or later player responses, and hide recognized promotional tiles. The older Skip/mute helper remains a fallback for ads that get through.
 
 All features are initially enabled. Open Settings to disable any individual helper.
 
@@ -65,7 +65,9 @@ Exceptions are for the top-level website, not a destination domain you want to a
 
 This is a small customizable blocker, not a comprehensive, automatically maintained filter subscription. Ads from unlisted hosts or the same domains as a site's content can get through. Empty ad spaces may remain. Blocking a shared service domain can affect useful content; pause on that site or adjust your custom list.
 
-The YouTube helper is experimental. It reacts to recognizable player markup and available Skip buttons; unskippable ads can still play muted. It does not remove server-inserted ads or bypass YouTube's anti-blocking screens. Live YouTube coverage is unverified and may change. Embedded players, Shorts-specific ad formats, sponsored segments within creator videos, and other video services are not specially handled. Disable the helper if it interferes with playback.
+YouTube filtering is experimental. Version 1.2 filters known `playerAds`, `adPlacements`, and `adSlots` instructions out of initial player data and later JSON/fetch/XHR responses before they schedule client-side ads. Normal stream URLs, captions, and playability information are preserved. The filter runs at document start only when enabled and outside site exceptions. Reload YouTube after an update or settings change so filtering starts before the player does.
+
+This is not a guarantee against every YouTube ad format: server-inserted ads, new player formats, anti-blocking screens, embedded players, Shorts-specific ads, sponsored segments within creator videos, and other video services are not covered. Ads that get through can still be muted/skipped by the fallback. Live videos were checked in an isolated, signed-out profile; this does not verify full ad coverage for a signed-in account. Disable the YouTube feature if it interferes with playback.
 
 The pop-up guard allows windows opened during a recent user interaction so ordinary sign-in/payment windows can work. Some unwanted pop-ups triggered by a click may therefore get through. It does not comprehensively detect popunders or redirect scripts. Redirect protection only applies when the destination is on the blocked-domain list. Page scripts can work around the page-level pop-up guard; this extension is not a malware or phishing protection product.
 
@@ -75,7 +77,8 @@ The pop-up guard allows windows opened during a recent user interaction so ordin
 - `storage` saves your settings locally, across browser restarts. Nothing is synchronized to a server.
 - `activeTab` identifies the website when you click the extension.
 - `alarms` checks the local update marker periodically. The extension does not contact GitHub or store GitHub credentials.
-- Content scripts run on HTTP/HTTPS pages and frames to control pop-ups. On top-level YouTube pages they inspect ad-related elements and adjust ad playback muting/Skip buttons. This requires website access and may produce a broad installation warning.
+- `scripting` and host access to `*.youtube.com` register the player filter before site scripts run. Registration persists across browser sessions and is removed when filtering is disabled; YouTube site exceptions exclude matching pages.
+- Content scripts run on HTTP/HTTPS pages and frames to control pop-ups. On top-level YouTube pages, a page-world script filters player data locally; a separate helper hides ad tiles and provides the fallback. This requires website access and may produce an installation warning.
 
 The extension has no telemetry, downloaded runtime scripts, external network fetches, browsing-history log, or document-content collection. It uses no debugger permission and displays no debugging banner. The separate Windows helper contacts GitHub to install newer complete extension packages from this repository.
 
@@ -90,12 +93,18 @@ Tested in Opera GX 136.0.6008.76 using a separate temporary profile and local fi
 - An automatic pop-up was blocked while a real user-clicked window remained available.
 - A local YouTube-shaped fixture triggered the Skip button, muted an ad, hid an ad tile, and restored the prior mute state afterward.
 - Disabling the YouTube helper restored the hidden tile.
+- A document-start fixture consumed its inline player data immediately: with filtering enabled, no ad-media request was sent and the normal media resource was requested. Disabling the feature restored the ad request, providing a control.
+- Real browser fetch/Request/Response/clone and XHR text/JSON paths filtered player data while preserving ordinary stream/caption metadata. Parent/subdomain exceptions and global/YouTube switches worked on existing pages and after reload.
+- Public YouTube videos played with filtering enabled and disabled in a signed-out profile. One live initial response contained an `adPlacements` field when blocking was off; the enabled run had no known ad fields and normal playback continued. This confirms compatibility and filtering on that response, not comprehensive live ad prevention.
 - Popup and settings pages loaded and were visually inspected.
 - A managed installation upgraded from 1.0.0 to 1.1.0 in Opera GX through the real local-file check and runtime reload, retaining its saved custom domain list. The test triggered the registered alarm early rather than waiting for the normal hourly download cycle.
+- The actual 1.1.0 runtime upgraded to 1.2.0 in an isolated Opera profile, retained custom settings, and registered the new filter without additional interaction beyond the already-enabled development mode.
 
 The fixture tests verify extension behavior, not live ad coverage on YouTube or other websites. No changes were made to the user's regular Opera profile.
 
-Run the included core, worker, and update-bridge tests with Node.js 20+: `npm test`. Run `tests/updater.ps1` for release packaging, installation, directory replacement, version, and checksum checks.
+Run the included core, worker, update-bridge, and player-interception tests with Node.js 20+: `npm test`. Run `tests/updater.ps1` for release packaging, installation, directory replacement, version, and checksum checks. Run `node tests/youtube-browser.cjs` with Playwright installed and `QUIET_BLOCK_BROWSER` set to an Opera/Chrome executable for the isolated browser fixture tests. `PLAYWRIGHT_MODULE` may point to an existing Playwright installation. These tests create a disposable profile under the ignored `work/` folder.
+
+The 1.2 package adds `youtube-block.js`. Before installing it with a 1.1 Windows helper, rerun `scripts/Install-Updates.ps1` from the new source to update the archive allowlist. Use `-SkipTask` to preserve the existing updater task unchanged. The new helper accepts both old and new packages and requires the player filter in packages version 1.2 or newer.
 
 ## Publishing the next update
 
@@ -108,8 +117,10 @@ Only published stable releases are installed. A push to `main` alone runs tests 
 
 ## Files and maintenance
 
-`rules.mjs` contains the bundled domains, settings validation, and rule builder. `background.js` persists settings and installs network rules. `popup-guard.js` handles automatic pop-ups. `page-controls.js` applies site exceptions and manages the YouTube helper. The remaining HTML/CSS/JS files provide the popup and settings screens.
+`rules.mjs` contains the bundled domains, settings validation, and rule builder. `background.js` persists settings, installs network rules, and registers the YouTube filter. `youtube-block.js` filters known player ad data in the page world. `popup-guard.js` handles automatic pop-ups. `page-controls.js` applies site exceptions, hides ad tiles, and manages the fallback. The remaining HTML/CSS/JS files provide the popup and settings screens.
 
 Edit the repository copy, not the managed installation: the helper replaces managed files with release files. For manual development copies, reload the extension in `opera://extensions`, then reload affected pages. Keep the extension folder on disk while it is installed.
 
 Technical references: [Chrome network-rule API](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest), [content scripts](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts), [user activation](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/userActivation), and [Opera installation instructions](https://help.opera.com/en/extensions/testing/).
+
+The player-filter implementation is original code; the known YouTube ad-field names and response-pruning approach were checked against the [uAssets filter rules](https://github.com/uBlockOrigin/uAssets/blob/master/filters/quick-fixes.txt). Registration uses Chrome's [scripting API](https://developer.chrome.com/docs/extensions/reference/api/scripting).

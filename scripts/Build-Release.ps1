@@ -10,7 +10,7 @@ New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 $output = (Resolve-Path -LiteralPath $OutputDirectory).Path
 $stage = Join-Path $output ('package-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $stage | Out-Null
-$files = @('manifest.json','background.js','rules.mjs','update-bridge.mjs','local-update.json','options.html','options.js','page-controls.js','popup-guard.js','popup.html','popup.js','styles.css')
+$files = @('manifest.json','background.js','rules.mjs','update-bridge.mjs','local-update.json','options.html','options.js','page-controls.js','popup-guard.js','youtube-block.js','popup.html','popup.js','styles.css')
 try {
   foreach ($file in $files) { Copy-Item -LiteralPath (Join-Path $source $file) -Destination (Join-Path $stage $file) }
   [IO.File]::WriteAllText((Join-Path $stage 'local-update.json'), (@{ managed = $false; version = $manifest.version } | ConvertTo-Json), [Text.UTF8Encoding]::new($false))

@@ -5,7 +5,8 @@
   const clicked = new WeakMap();
   const youtubePage = /(^|\.)youtube\.com$/.test(location.hostname) && window === window.top;
 
-  function publish() { window.dispatchEvent(new CustomEvent('quiet-block-config', { detail: { popups: config.popups } })); }
+  let ready = false;
+  function publish() { if (ready) window.dispatchEvent(new CustomEvent('quiet-block-config', { detail: config })); }
   window.addEventListener('quiet-block-request-config', publish);
 
   function restore(video, previous) {
@@ -54,6 +55,7 @@
     const exempt = (settings.allowed || []).some(domain => topHost === domain || topHost.endsWith(`.${domain}`));
     const enabled = settings.enabled !== false && !exempt;
     config = { popups: enabled && settings.popups !== false, youtube: enabled && settings.youtube !== false };
+    ready = true;
     publish(); updateYouTube();
   }
   chrome.storage.local.get('settings').then(({ settings }) => apply(settings)).catch(() => {});

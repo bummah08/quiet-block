@@ -9,7 +9,7 @@ async function request(message) {
 function render() {
   const exception = host && exceptionFor(host, settings.allowed);
   $('mode').textContent = !settings.enabled ? 'Blocking is off' : exception ? 'Paused on this site' : 'Blocking is on';
-  $('summary').textContent = !settings.enabled ? 'Websites can load normally.' : exception ? 'Filtering and page protections are paused here.' : 'Ad domains filtered' + (settings.popups ? ' · automatic pop-ups blocked' : '') + (settings.youtube ? ' · YouTube helper on' : '');
+  $('summary').textContent = !settings.enabled ? 'Websites can load normally.' : exception ? 'Filtering and page protections are paused here.' : 'Ad domains filtered' + (settings.popups ? ' · automatic pop-ups blocked' : '') + (settings.youtube ? ' · YouTube ad filter on' : '');
   $('power').textContent = settings.enabled ? 'Turn off everywhere' : 'Turn on blocking';
   $('power').disabled = false;
   $('site').disabled = !host || !settings.enabled;
